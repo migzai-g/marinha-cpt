@@ -59,7 +59,7 @@ canvas{display:block;width:100%;height:calc(100% - 41px)}
 </style></head><body>
 <div id="login"><form id="lf"><h1>Marinha CP-T</h1><p>Acesso restrito. Entre com seu e-mail e senha.</p><input id="em" type="email" placeholder="E-mail" autocomplete="username" required><input id="pw" type="password" placeholder="Senha" autocomplete="current-password" required><button>Entrar</button><div id="lmsg"></div></form></div>
 <nav id="side"><header><h1><a href="#/">Marinha CP-T<small>Plano de estudos · nov/2026 a mai/2030</small></a></h1><input id="q" type="search" placeholder="Buscar nota…"></header><div id="tree"></div></nav>
-<div id="main"><div id="bar"><button id="mb">☰ Menu</button><span id="crumb"></span><span class="sp"></span><a href="#" id="out">Sair</a></div><div id="view"></div></div>
+<div id="main"><div id="bar"><button id="mb">☰ Menu</button><span id="crumb"></span><span class="sp"></span><a href="#" id="imp">Importar notas</a> <a href="#" id="out">Sair</a></div><div id="view"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script>
@@ -195,12 +195,13 @@ async function load(){const v=$('#view');v.innerHTML='<article><p>Carregando…<
  try{const a=await all('notas','id,pasta,props,corpo');if(!a.length)return importar();
   NOTES={};a.forEach(r=>NOTES[r.id]={f:r.pasta,p:r.props||{},b:r.corpo});PROG={};(await all('progresso','chave,feito')).forEach(r=>PROG[r.chave]=r.feito);
   build();tree();route()}catch(e){v.innerHTML='<article><p>Não consegui ler o banco: '+esc(e.message||String(e))+'</p></article>'}}
-function importar(){$('#view').innerHTML='<article><h1>Importar notas</h1><p>O banco ainda está vazio. Escolha o arquivo <code>notas.json</code> para enviar as notas.</p><input type="file" id="fi" accept=".json"><p id="im"></p></article>';
+function importar(){$('#view').innerHTML='<article><h1>Importar notas</h1><p>Escolha o arquivo <code>notas.json</code> para enviar. Notas que já existem são atualizadas e as novas são criadas (nada é apagado, e seu progresso fica intacto).</p><input type="file" id="fi" accept=".json"><p id="im"></p></article>';
  $('#fi').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text()),rows=Object.entries(j).map(([id,n])=>({id,pasta:n.f,props:n.p,corpo:n.b}));
   for(let i=0;i<rows.length;i+=40){const r=await sb.from('notas').upsert(rows.slice(i,i+40));if(r.error)throw r.error;$('#im').textContent='Enviadas '+Math.min(i+40,rows.length)+' de '+rows.length}load()}catch(x){$('#im').textContent='Erro: '+(x.message||x)}}}
 async function start(){const{data:{session}}=await sb.auth.getSession();if(!session){L.style.display='flex';return}uid=session.user.id;L.style.display='none';load()}
 $('#lf').onsubmit=async e=>{e.preventDefault();if(!sb)return say('Preencha o arquivo config.js com os dados do Supabase.');say('Entrando…');
  const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error)return say('E-mail ou senha incorretos.');say('');start()};
+$('#imp').onclick=e=>{e.preventDefault();importar()};
 $('#out').onclick=async e=>{e.preventDefault();await sb.auth.signOut();location.reload()};
 if(sb)start();else{L.style.display='flex';say('Preencha o arquivo config.js com os dados do Supabase.')}
 </script></body></html>
